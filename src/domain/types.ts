@@ -59,15 +59,43 @@ export type WindowedSeries = {
 export type SpectrumBin = { frequencyHz: number; power: number; amplitude: number };
 export type CrossSpectrumBin = SpectrumBin & { coherence: number; phaseRad: number };
 
+export type DecayFitStatus = 'fitted' | 'fitted-with-drift' | 'non-decaying' | 'insufficient-points' | 'invalid-data';
+export type DecayBaselineStrategy = 'constant' | 'linear-drift';
+export type DecayOutlierStrategy = 'tukey-bisquare';
+
 export type DecayFit = {
   model: 'exponential';
+  status: DecayFitStatus;
+  statusReason: string;
+  fitStartNs: number | null;
+  fitEndNs: number | null;
   amplitude0: number | null;
   timeConstantNs: number | null;
   offset: number;
+  driftSlopePerNs: number | null;
+  baselineStrategy: DecayBaselineStrategy | null;
+  outlierStrategy: DecayOutlierStrategy;
   rSquared: number | null;
   usedPoints: number;
   rejectedPoints: number;
-  confidence: { lowerNs: number | null; upperNs: number | null };
+  confidence: {
+    level: 0.95;
+    lowerNs: number | null;
+    upperNs: number | null;
+    score: number | null;
+  };
+  modelEvidence: {
+    exponential: number;
+    constantBaseline: number;
+    linearBaseline: number;
+  };
+  fitQuality: {
+    modelEvidence: number;
+    inlierFraction: number;
+    identifiability: number | null;
+    intervalPrecision: number | null;
+  };
+  warnings: string[];
 };
 
 export type NoiseSummary = {
