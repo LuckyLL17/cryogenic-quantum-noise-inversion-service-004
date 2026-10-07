@@ -63,9 +63,15 @@ export function analyzeExperiment(request: AnalysisRequest): AnalysisResult {
   const calibrationVersions = [...new Set(calibrated.map((sample) => sample.calibrationProfileId))].sort();
   const rawPhaseDrift = phases.at(-1)! - phases[0];
   const phaseDriftRad = Math.atan2(Math.sin(rawPhaseDrift), Math.cos(rawPhaseDrift));
+  const warnings = request.referenceChannelId && reference.length !== primary.length ? ['Reference channel could not be paired for every primary sample'] : [];
+  if (decay && decay.status !== 'fitted') {
+    warnings.push(`Decay fit status: ${decay.status}${decay.reasons.length ? ` (${decay.reasons.join(', ')})` : ''}`);
+  } else if (decay && decay.confidence !== 'high') {
+    warnings.push(`Decay fit low confidence: ${decay.reasons.join(', ') || 'unexplained'}`);
+  }
   return {
     analysisId: randomUUID(), experimentId: request.experimentId, kind: request.kind, inputDigest: digest(request), calibrationVersions,
     metrics: { sampleCount: calibrated.length, channelCount: new Set(calibrated.map((sample) => sample.channelId)).size, durationNs: sync.samples.at(-1)!.timestampNs - sync.samples[0].timestampNs, triggerCount: sync.triggerCount, droppedSamples: sync.droppedSamples, medianSkewNs: sync.medianSkewNs, amplitudeMean: mean(amplitudes), amplitudeStdDev: stddev(amplitudes, mean(amplitudes)), phaseDriftRad, decay },
-    primarySpectrum, crossSpectrum: cross, noise, scanResults, warnings: request.referenceChannelId && reference.length !== primary.length ? ['Reference channel could not be paired for every primary sample'] : [],
+    primarySpectrum, crossSpectrum: cross, noise, scanResults, warnings,
   };
 }

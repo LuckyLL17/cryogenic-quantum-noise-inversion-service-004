@@ -59,16 +59,55 @@ export type WindowedSeries = {
 export type SpectrumBin = { frequencyHz: number; power: number; amplitude: number };
 export type CrossSpectrumBin = SpectrumBin & { coherence: number; phaseRad: number };
 
+export type DecayFitStatus = 'fitted' | 'baseline-drift' | 'insufficient-points' | 'non-decaying' | 'invalid';
+export type DecayConfidence = 'high' | 'low' | 'none';
+export type DecayFitReason =
+  | 'no-samples-in-window'
+  | 'nonfinite-points-removed'
+  | 'few-usable-points'
+  | 'no-decay-detected'
+  | 'decay-did-not-converge'
+  | 'time-constant-unconstrained'
+  | 'time-constant-at-window-edge'
+  | 'wide-confidence-interval'
+  | 'structured-residuals'
+  | 'baseline-drift-corrected'
+  | 'drift-without-decay'
+  | 'numerical-failure';
+
 export type DecayFit = {
   model: 'exponential';
+  status: DecayFitStatus;
+  confidence: DecayConfidence;
+  reasons: DecayFitReason[];
+  /** Fitted initial decay amplitude above offset at the first fitted timestamp; null when no model was accepted. */
   amplitude0: number | null;
   timeConstantNs: number | null;
+  /** Fitted baseline level at the first fitted timestamp. */
   offset: number;
+  /** Fitted linear baseline slope (amplitude per ns); non-zero only when baseline drift was accepted. */
+  baselineSlopePerNs: number;
+  /** Weighted coefficient of determination of the accepted model in signal space; null when no model was accepted. */
   rSquared: number | null;
   usedPoints: number;
   rejectedPoints: number;
-  confidence: { lowerNs: number | null; upperNs: number | null };
+  confidenceInterval: { lowerNs: number | null; upperNs: number | null };
 };
+
+export const noDecayFit = (offset: number, usedPoints: number, rejectedPoints: number, status: DecayFitStatus, reasons: DecayFitReason[]): DecayFit => ({
+  model: 'exponential',
+  status,
+  confidence: 'none',
+  reasons,
+  amplitude0: null,
+  timeConstantNs: null,
+  offset,
+  baselineSlopePerNs: 0,
+  rSquared: null,
+  usedPoints,
+  rejectedPoints,
+  confidenceInterval: { lowerNs: null, upperNs: null },
+});
 
 export type NoiseSummary = {
   class: NoiseClass;
